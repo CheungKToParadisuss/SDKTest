@@ -1,7 +1,6 @@
 #include <tchar.h>
 #include <Windows.h>
-
-
+#include "resource.h"
 BOOL EnableShutDownPriv()
 {
 	HANDLE hToken = NULL;
@@ -44,6 +43,53 @@ BOOL ReSetWindows(DWORD dwFlags, BOOL bForce)
 	return ExitWindowsEx(dwFlags, 0);
 }
 
+INT_PTR CALLBACK DialogProc(_In_ HWND   hwndDlg, _In_ UINT   uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam) {
+	switch (uMsg)
+	{
+	case WM_INITDIALOG:
+	{
+		HWND hComBox = GetDlgItem(hwndDlg, IDC_COMBO);
+		SendMessage(hComBox, CB_INSERTSTRING, 0, (LPARAM)_T("注销"));
+		SendMessage(hComBox, CB_INSERTSTRING, 1, (LPARAM)_T("重启"));
+		SendMessage(hComBox, CB_INSERTSTRING, 2, (LPARAM)_T("关机"));
+	}
+	break;
+	case WM_COMMAND:
+	{
+		switch (wParam)
+		{
+		case IDOK:
+		{
+			TCHAR szText[20] = { 0 };
+			GetDlgItemText(hwndDlg, IDC_COMBO, szText, 20);
+			if (_tcscmp(szText, _T("注销")) == 0) {
+				ReSetWindows(EWX_LOGOFF, FALSE);
+			}
+			else if (_tcscmp(szText, _T("重启")) == 0) {
+				ReSetWindows(EWX_REBOOT, FALSE);
+			}
+			else if (_tcscmp(szText, _T("关机")) == 0) {
+				ReSetWindows(EWX_SHUTDOWN, FALSE);
+			}
+		}
+		break;
+		case IDCANCEL:
+		{
+			int iRet = MessageBox(hwndDlg, _T("关闭按钮被压下！"), _T("提示"), MB_OKCANCEL);
+			if (iRet == IDOK) {
+				EndDialog(hwndDlg, IDCANCEL);
+			}
+		}
+		break;
+		default:break;
+		}
+	}
+	default:break;
+	}
+	return 0;
+}
+
+
 int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow)
 {
 	if (_tcscmp(lpCmdLine, _T("/r")) == 0) {
@@ -54,6 +100,10 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
 	}
 	else if (_tcscmp(lpCmdLine, _T("/l")) == 0) {
 		ReSetWindows(EWX_LOGOFF, FALSE);
+	}
+	else {
+		//dialog
+		DialogBox(hInstance, MAKEINTRESOURCE(IDD_DIALOG), NULL, DialogProc);
 	}
 	return 0;
 }
